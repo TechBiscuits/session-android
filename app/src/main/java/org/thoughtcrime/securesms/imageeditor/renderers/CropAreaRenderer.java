@@ -24,67 +24,86 @@ import org.thoughtcrime.securesms.imageeditor.RendererContext;
  */
 public final class CropAreaRenderer implements Renderer {
 
-  @ColorRes
+  private static final int OUTER_COLOR = R.color.crop_area_renderer_outer_color;
+  private static final int EDGE_COLOR = R.color.crop_area_renderer_edge_color;
+  private static final int EDGE_THICKNESS = R.dimen.crop_area_renderer_edge_thickness;
+  private static final int EDGE_SIZE = R.dimen.crop_area_renderer_edge_size;
+
+  @ColorInt
   private final int color;
 
-  private final Path cropClipPath   = new Path();
+  private final Path cropClipPath = new Path();
   private final Path screenClipPath = new Path();
 
-  private final RectF dst   = new RectF();
+  private final RectF dst = new RectF();
   private final Paint paint = new Paint();
 
   @Override
-  public void render(@NonNull RendererContext rendererContext) {
-    rendererContext.save();
+public void render(@NonNull RendererContext rendererContext) {
+  rendererContext.save();
 
-    Canvas    canvas    = rendererContext.canvas;
-    Resources resources = rendererContext.context.getResources();
+  Canvas    canvas    = rendererContext.canvas;
+  Resources resources = rendererContext.context.getResources();
 
-    canvas.clipPath(cropClipPath);
-    canvas.drawColor(ResourcesCompat.getColor(resources, color, null));
+  canvas.clipPath(cropClipPath);
+  canvas.drawColor(color);
 
-    rendererContext.mapRect(dst, Bounds.FULL_BOUNDS);
+  rendererContext.mapRect(dst, Bounds.FULL_BOUNDS);
 
-    final int thickness = resources.getDimensionPixelSize(R.dimen.crop_area_renderer_edge_thickness);
-    final int size      = (int) Math.min(resources.getDimensionPixelSize(R.dimen.crop_area_renderer_edge_size), Math.min(dst.width(), dst.height()) / 3f - 10);
+  final int thickness = resources.getDimensionPixelSize(EDGE_THICKNESS);
+  final int size      = (int) Math.min(resources.getDimensionPixelSize(EDGE_SIZE), Math.min(dst.width(), dst.height()) / 3f - 10);
 
-    paint.setColor(ResourcesCompat.getColor(resources, R.color.crop_area_renderer_edge_color, null));
+  paint.setColor(ContextCompat.getColor(rendererContext.context, EDGE_COLOR));
 
-    rendererContext.canvasMatrix.setToIdentity();
-    screenClipPath.reset();
-    screenClipPath.moveTo(dst.left, dst.top);
-    screenClipPath.lineTo(dst.right, dst.top);
-    screenClipPath.lineTo(dst.right, dst.bottom);
-    screenClipPath.lineTo(dst.left, dst.bottom);
-    screenClipPath.close();
-    canvas.clipPath(screenClipPath);
-    canvas.translate(dst.left, dst.top);
+  rendererContext.canvasMatrix.setToIdentity();
+  screenClipPath.reset();
+  screenClipPath.moveTo(dst.left, dst.top);
+  screenClipPath.lineTo(dst.right, dst.top);
+  screenClipPath.lineTo(dst.right, dst.bottom);
+  screenClipPath.lineTo(dst.left, dst.bottom);
+  screenClipPath.close();
+  canvas.clipPath(screenClipPath);
+  canvas.translate(dst.left, dst.top);
 
-    float halfDx = (dst.right - dst.left - size + thickness) / 2;
-    float halfDy = (dst.bottom - dst.top - size + thickness) / 2;
+  float halfDx = (dst.right - dst.left - size + thickness) / 2;
+  float halfDy = (dst.bottom - dst.top - size + thickness) / 2;
 
-    canvas.drawRect(-thickness, -thickness, size, size, paint);
+  drawCornerMarkers(canvas, halfDx, halfDy, thickness, size);
 
-    canvas.translate(0, halfDy);
-    canvas.drawRect(-thickness, -thickness, size, size, paint);
+  rendererContext.restore();
+}
 
-    canvas.translate(0, halfDy);
-    canvas.drawRect(-thickness, -thickness, size, size, paint);
+private void drawCornerMarkers(Canvas canvas, float halfDx, float halfDy, int thickness, int size) {
+  // Top-left
+  canvas.drawRect(-thickness, -thickness, size, size, paint);
 
-    canvas.translate(halfDx, 0);
-    canvas.drawRect(-thickness, -thickness, size, size, paint);
+  // Top-middle
+  canvas.translate(0, halfDy);
+  canvas.drawRect(-thickness, -thickness, size, size, paint);
 
-    canvas.translate(halfDx, 0);
-    canvas.drawRect(-thickness, -thickness, size, size, paint);
+  // Top-right
+  canvas.translate(0, halfDy);
+  canvas.drawRect(-thickness, -thickness, size, size, paint);
 
-    canvas.translate(0, -halfDy);
-    canvas.drawRect(-thickness, -thickness, size, size, paint);
+  // Middle-right
+  canvas.translate(halfDx, 0);
+  canvas.drawRect(-thickness, -thickness, size, size, paint);
 
-    canvas.translate(0, -halfDy);
-    canvas.drawRect(-thickness, -thickness, size, size, paint);
+  // Bottom-right
+  canvas.translate(halfDx, 0);
+  canvas.drawRect(-thickness, -thickness, size, size, paint);
 
-    canvas.translate(-halfDx, 0);
-    canvas.drawRect(-thickness, -thickness, size, size, paint);
+  // Bottom-middle
+  canvas.translate(0, -halfDy);
+  canvas.drawRect(-thickness, -thickness, size, size, paint);
+
+  // Bottom-left
+  canvas.translate(0, -halfDy);
+  canvas.drawRect(-thickness, -thickness, size, size, paint);
+
+  // Middle-left
+  canvas.translate(-halfDx, 0);
+  canvas.drawRect(-thickness, -thickness, size, size, paint);
 
     rendererContext.restore();
   }
